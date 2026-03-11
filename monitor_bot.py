@@ -37,10 +37,10 @@ logger = logging.getLogger(__name__)
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 
-POLL_INTERVAL_SECONDS = 60
+DEFAULT_POLL_INTERVAL_SECONDS = 60
 
 # Conversation states
-ASK_URL, ASK_CONDITION = range(2)
+ASK_URL, ASK_CONDITION, ASK_INTERVAL = range(3)
 
 
 # ---------------------------------------------------------------------------
@@ -66,6 +66,36 @@ def parse_condition(text: str):
 
 def condition_label(operator: str, code: int) -> str:
     return f"NOT {code}" if operator == "not" else str(code)
+
+
+def parse_interval(text: str):
+    """
+    Accepts:
+      "30s" / "30 s" / "30 seconds"  -> 30
+      "5m" / "5 min" / "5 minutes"   -> 300
+      "2h" / "2 hours"               -> 7200
+      plain number                   -> treated as seconds
+    Returns seconds as int, or None if unparseable.
+    """
+    text = text.strip().lower()
+    m = re.match(r'^(\d+(?:\.\d+)?)\s*(h|hour|hours)$', text)
+    if m:
+        return int(float(m.group(1)) * 3600)
+    m = re.match(r'^(\d+(?:\.\d+)?)\s*(m|min|mins|minute|minutes)$', text)
+    if m:
+        return int(float(m.group(1)) * 60)
+    m = re.match(r'^(\d+(?:\.\d+)?)\s*(s|sec|secs|second|seconds)?$', text)
+    if m:
+        return int(float(m.group(1)))
+    return None
+
+
+def interval_label(seconds: int) -> str:
+    if seconds >= 3600 and seconds % 3600 == 0:
+        return f"{seconds // 3600}h"
+    if seconds >= 60 and seconds % 60 == 0:
+        return f"{seconds // 60}m"
+    return f"{seconds}s"
 
 
 # ---------------------------------------------------------------------------
@@ -150,7 +180,35 @@ async def got_condition(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return ASK_CONDITION
 
+    context.user_data["condition"] = condition
+    await update.message.reply_text(
+        f"How often should I check? (default: {interval_label(DEFAULT_POLL_INTERVAL_SECONDS)})\n\n"
+        "Examples:\n"
+        "\u2022 `30s` or `30 seconds`\n"
+        "\u2022 `5m` or `5 minutes`\n"
+        "\u2022 `2h` or `2 hours`\n\n"
+        f"Or just send `skip` to use the default ({interval_label(DEFAULT_POLL_INTERVAL_SECONDS)}).",
+        parse_mode="Markdown",
+    )
+    return ASK_INTERVAL
+
+
+async def got_interval(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text.strip().lower()
+    if text == "skip":
+        interval = DEFAULT_POLL_INTERVAL_SECONDS
+    else:
+        interval = parse_interval(text)
+        if interval is None or interval < 5:
+            await update.message.reply_text(
+                "Couldn't parse that, or interval is too short (minimum 5s).\n"
+                "Try `30s`, `5m`, `1h`, or `skip` for default.",
+                parse_mode="Markdown",
+            )
+            return ASK_INTERVAL
+
     url = context.user_data["url"]
+    condition = context.user_data["condition"]
     operator, code = condition
 
     # Cancel any existing job for this chat
@@ -159,18 +217,18 @@ async def got_condition(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     context.job_queue.run_repeating(
         monitor_job,
-        interval=POLL_INTERVAL_SECONDS,
+        interval=interval,
         first=0,
         chat_id=update.effective_chat.id,
         name=str(update.effective_chat.id),
-        data={"url": url, "condition": condition},
+        data={"url": url, "condition": condition, "interval": interval},
     )
 
     await update.message.reply_text(
         f"\u2705 Monitoring started!\n\n"
         f"\U0001f517 URL: {url}\n"
         f"\U0001f4cb Notify when status: {condition_label(operator, code)}\n"
-        f"\u23f1 Checking every {POLL_INTERVAL_SECONDS}s\n\n"
+        f"\u23f1 Checking every {interval_label(interval)}\n\n"
         f"I'll message you when the condition is met. Use /stop to cancel."
     )
     return ConversationHandler.END
@@ -191,11 +249,12 @@ async def status_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if jobs:
         data = jobs[0].data
         operator, code = data["condition"]
+        iv = data.get("interval", DEFAULT_POLL_INTERVAL_SECONDS)
         await update.message.reply_text(
             f"\U0001f441 Currently monitoring:\n\n"
             f"\U0001f517 {data['url']}\n"
             f"\U0001f4cb Notify when status: {condition_label(operator, code)}\n"
-            f"\u23f1 Every {POLL_INTERVAL_SECONDS}s"
+            f"\u23f1 Every {interval_label(iv)}"
         )
     else:
         await update.message.reply_text("No active monitoring. Use /monitor to start.")
@@ -221,6 +280,7 @@ def main():
         states={
             ASK_URL: [MessageHandler(filters.TEXT & ~filters.COMMAND, got_url)],
             ASK_CONDITION: [MessageHandler(filters.TEXT & ~filters.COMMAND, got_condition)],
+            ASK_INTERVAL: [MessageHandler(filters.TEXT & ~filters.COMMAND, got_interval)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
