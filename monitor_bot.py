@@ -15,8 +15,8 @@ To get your chat_id: start the bot, send any message, then open:
   https://api.telegram.org/bot<TOKEN>/getUpdates  and read "chat" -> "id"
 """
 
-import os
 import logging
+import os
 import re
 import requests as http_requests
 from telegram import Update
@@ -236,4 +236,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
