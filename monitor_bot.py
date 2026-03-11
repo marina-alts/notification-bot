@@ -15,6 +15,7 @@ To get your chat_id: start the bot, send any message, then open:
   https://api.telegram.org/bot<TOKEN>/getUpdates  and read "chat" -> "id"
 """
 
+import os
 import logging
 import re
 import requests as http_requests
@@ -34,7 +35,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-BOT_TOKEN = "placeholder"  # e.g. "7123456789:AAFxxx..."
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 
 POLL_INTERVAL_SECONDS = 60
 
@@ -235,3 +236,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
