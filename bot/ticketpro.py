@@ -1,6 +1,9 @@
 import asyncio
 import html as html_lib
+import json
 import logging
+import re
+from datetime import date, datetime, timedelta
 from io import BytesIO
 
 import requests as http_requests
@@ -18,6 +21,7 @@ from bot.config import (
     ASK_SEARCH_QUERY,
     ASK_SEARCH_DAYS,
     TICKETPRO_SEARCH_URL,
+    TICKETPRO_SEARCH_HEADERS,
     SEARCH_UA,
 )
 from bot.ticketpro_client import (
