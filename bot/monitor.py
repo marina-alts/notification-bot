@@ -233,11 +233,12 @@ async def _confirm_and_start(message, context: ContextTypes.DEFAULT_TYPE, interv
     )
 
     await message.reply_text(
-        f"✅ <b>Мониторинг запущен!</b>\n\n"
-        f'🔗 URL: <a href="{url}">{url}</a>\n'
-        f"📋 Уведомить при статусе: <b>{condition_label(operator, code)}</b>\n"
-        f"⏱ Проверка каждые <b>{interval_label(interval)}</b>\n\n"
-        "Я сообщу, когда условие выполнится.",
+        f"<b>✅ МОНИТОРИНГ ЗАПУЩЕН</b>\n\n"
+        f"<b>Параметры:</b>\n"
+        f'🔗 Адрес: <a href="{url}">{url}</a>\n'
+        f"📋 Условие: {condition_label(operator, code)}\n"
+        f"⏱ Интервал: каждые {interval_label(interval)}\n\n"
+        f"<b>📬 Вы получите уведомление</b> когда условие выполнится",
         parse_mode="HTML",
         disable_web_page_preview=True,
         reply_markup=_STOP_KB,
@@ -260,9 +261,9 @@ async def stop_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if jobs:
         for job in jobs:
             job.schedule_removal()
-        await reply("🛑 Мониторинг остановлен.")
+        await reply("<b>🛑 МОНИТОРИНГ ОСТАНОВЛЕН</b>\n\nМониторинг URL успешно выключен.", parse_mode="HTML")
     else:
-        await reply("Нет активного мониторинга для остановки.")
+        await reply("❌ <b>Нет активного мониторинга</b>\n\nДля запуска используйте: <code>/monitor</code>", parse_mode="HTML")
 
 
 async def status_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -280,17 +281,26 @@ async def status_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         iv = data.get("interval", DEFAULT_POLL_INTERVAL_SECONDS)
         url = data["url"]
         await reply(
-            f"👁 <b>Текущий мониторинг:</b>\n\n"
-            f'🔗 <a href="{url}">{url}</a>\n'
-            f"📋 Уведомить при статусе: <b>{condition_label(operator, code)}</b>\n"
-            f"⏱ Каждые <b>{interval_label(iv)}</b>",
+            f"<b>👁 МОНИТОРИНГ URL</b>\n"
+            f"{'─' * 40}\n\n"
+            f"<b>Адрес:</b>\n"
+            f'<a href="{url}">{url}</a>\n\n'
+            f"<b>Условие срабатывания:</b>\n"
+            f"{condition_label(operator, code)}\n\n"
+            f"<b>Интервал проверки:</b>\n"
+            f"{interval_label(iv)}\n\n"
+            f"<b>Статус:</b> ✅ Активен\n"
+            f"{'─' * 40}",
             parse_mode="HTML",
             disable_web_page_preview=True,
             reply_markup=_STOP_KB,
         )
     else:
         await reply(
-            "Нет активного мониторинга. Используйте /monitor для запуска.",
+            "❌ <b>No active URL monitoring</b>\n\n"
+            "To start monitoring, use:\n"
+            "<code>/monitor</code>",
+            parse_mode="HTML",
         )
 
 

@@ -18,27 +18,30 @@ from bot.ticketpro import build_search_conversation
 
 _MAIN_KB = InlineKeyboardMarkup([
     [
-        InlineKeyboardButton("🔍 Поиск событий",  callback_data="action_search"),
-        InlineKeyboardButton("� Мониторинг поиска", callback_data="action_monitor_search"),
+        InlineKeyboardButton("🔍 Поиск", callback_data="action_search"),
+        InlineKeyboardButton("📌 Мониторинг поиска", callback_data="action_monitor_search"),
     ],
     [
         InlineKeyboardButton("👁 Мониторинг URL", callback_data="action_monitor"),
-        InlineKeyboardButton("📊 Статус",  callback_data="action_status"),
     ],
     [
-        InlineKeyboardButton("🛑 Стоп",    callback_data="action_stop"),
+        InlineKeyboardButton("📊 Статус", callback_data="action_status"),
+        InlineKeyboardButton("🛑 Остановить", callback_data="action_stop"),
     ],
 ])
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "<b>🤖 Бот событий ticketpro.by</b>\n\n"
-        "Что я умею:\n"
-        "  🔍 Искать события по запросу\n"
-        "  � Следить за новыми событиями по запросу\n"
-        "  �👁 Следить за HTTP-статусом URL\n\n"
-        "Нажмите кнопку или введите команду:",
+        "<b>🎫 Бот мониторинга ticketpro.by</b>\n\n"
+        "<b>📖 ВОЗМОЖНОСТИ:</b>\n\n"
+        "<b>🔍 ПОИСК</b>\n"
+        "Найти события по названию или исполнителю\n\n"
+        "<b>📌 МОНИТОРИНГ</b>\n"
+        "• Следить за <b>новыми событиями</b> по поиску\n"
+        "• Следить за <b>HTTP-статусом</b> URL\n\n"
+        "<b>📊 УПРАВЛЕНИЕ</b>\n"
+        "Проверить статус и остановить мониторинг\n",
         parse_mode="HTML",
         reply_markup=_MAIN_KB,
     )

@@ -241,11 +241,12 @@ async def _confirm_and_start_search_monitor(
 
     days_label = f"за {days} дней" if days > 0 else "без ограничения по дате"
     await message.reply_text(
-        f"✅ <b>Мониторинг поиска запущен!</b>\n\n"
-        f"🔍 Запрос: <b>{search_query}</b>\n"
-        f"📅 Период: <b>{days_label}</b>\n"
-        f"⏱ Проверка каждые <b>{interval_label(interval)}</b>\n\n"
-        "Я сообщу, когда появятся новые события.",
+        f"<b>✅ МОНИТОРИНГ ЗАПУЩЕН</b>\n\n"
+        f"<b>Параметры:</b>\n"
+        f"🔍 Запрос: {search_query}\n"
+        f"📅 Период: {days_label}\n"
+        f"⏱ Интервал: каждые {interval_label(interval)}\n\n"
+        f"<b>📬 Вы получите уведомление</b> когда появятся новые события",
         parse_mode="HTML",
         reply_markup=_STOP_KB,
     )
@@ -268,9 +269,9 @@ async def stop_search_monitor_cmd(update: Update, context: ContextTypes.DEFAULT_
     if jobs:
         for job in jobs:
             job.schedule_removal()
-        await reply("🛑 Мониторинг поиска остановлен.")
+        await reply("<b>🛑 МОНИТОРИНГ ОСТАНОВЛЕН</b>\n\nМониторинг поиска успешно выключен.", parse_mode="HTML")
     else:
-        await reply("Нет активного мониторинга поиска для остановки.")
+        await reply("❌ <b>Нет активного мониторинга</b>\n\nДля запуска используйте: <code>/monitor_search</code>", parse_mode="HTML")
 
 
 async def status_search_monitor_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -291,17 +292,26 @@ async def status_search_monitor_cmd(update: Update, context: ContextTypes.DEFAUL
         seen_count = len(data.get("seen_urls", set()))
         days_label = f"за {days} дней" if days > 0 else "без ограничения по дате"
         await reply(
-            f"📌 <b>Текущий мониторинг поиска:</b>\n\n"
-            f"🔍 Запрос: <b>{query}</b>\n"
-            f"📅 Период: <b>{days_label}</b>\n"
-            f"⏱ Каждые <b>{interval_label(interval)}</b>\n"
-            f"📊 Обнаружено событий: <b>{seen_count}</b>",
+            f"<b>📌 МОНИТОРИНГ ПОИСКА</b>\n"
+            f"{'─' * 40}\n\n"
+            f"<b>Поисковый запрос:</b>\n"
+            f"{query}\n\n"
+            f"<b>Период поиска:</b>\n"
+            f"{days_label}\n\n"
+            f"<b>Интервал проверки:</b>\n"
+            f"{interval_label(interval)}\n\n"
+            f"<b>События найдено:</b> {seen_count}\n\n"
+            f"<b>Статус:</b> ✅ Активен\n"
+            f"{'─' * 40}",
             parse_mode="HTML",
             reply_markup=_STOP_KB,
         )
     else:
         await reply(
-            "Нет активного мониторинга поиска. Используйте /monitor_search для запуска.",
+            "❌ <b>Нет активного мониторинга поиска</b>\n\n"
+            "Для запуска используйте:\n"
+            "<code>/monitor_search</code>",
+            parse_mode="HTML",
         )
 
 

@@ -10,9 +10,28 @@ Quick reminders to keep the codebase easy to read and change.
 
 ## Adding a new feature
 
-1. Does it fit an existing module? Add it there.
-2. If it's a new domain (e.g. calendar integration), create a new `bot/<domain>.py` and a matching `tests/unit/test_<domain>_helpers.py`.
-3. Wire it up in `bot/app.py` — keep `app.py` as thin glue only.
+**See SKILL.md** for full workflow. Quick steps:
+
+1. **Plan with questions:** Data persistence? Concurrency? UI placement? Reusable code?
+2. **Create module:** `bot/feature.py` with handlers + conversation builder + job function (if polling)
+3. **Add states:** New states in `config.py` if needed
+4. **Wire in app.py:** Import, add button to menu, register handlers
+5. **Improve UI:** Use HTML formatting, consistent status displays
+6. **Test:** Check imports, job naming unique, HTML escaping
+
+**Module pattern:**
+```python
+# In bot/feature.py:
+# 1. Imports
+# 2. Constants (keyboards, state constants from config)
+# 3. Background job (if needed) → async def feature_job(context)
+# 4. Conversation handlers → async def handler_name(update, context)
+# 5. Build function → def build_feature_conversation(cancel_handler)
+```
+
+**Job naming:** Always use `feature_{chat_id}` to avoid conflicts.
+
+**App wiring:** Keep App as thin glue. All domain logic stays in feature modules.
 
 ## Tests
 
@@ -24,15 +43,27 @@ Quick reminders to keep the codebase easy to read and change.
 
 ## Conversation handlers
 
-- Keep `build_*_conversation()` factories at the bottom of each module — they're the public API.
-- Each state should have both a `CallbackQueryHandler` (button) and a `MessageHandler` (text fallback) where it makes sense.
-- Always call `await query.answer()` first in every `CallbackQueryHandler`.
+- `build_*_conversation()` at the bottom of each module — public API
+- Each state: `CallbackQueryHandler` (button) + `MessageHandler` (text fallback)
+- Always: `await query.answer()` first in every callback
+- Keep to **3-4 steps max**
+- Provide `/cancel` always
 
-## HTML vs Markdown
+## Messages
 
-All bot messages use `parse_mode="HTML"`. Never switch back to Markdown — it has stricter escaping rules and breaks on unmatched characters. Escape user-supplied strings with `html.escape()`.
+- **Always** `parse_mode="HTML"`
+- Escape user input: `html.escape(user_string)`
+- Status format: `<b>ICON FEATURE</b>\n────\n<b>Param:</b> Value\n<b>Status:</b> ✅ Active`
+- Use visual separators: `{'─' * 40}`
 
-## Environment
+## Basics
 
-- `BOT_TOKEN` must be set as an environment variable before running.
-- The Procfile entry point is `monitor_bot.py` — don't rename or move it.
+- `BOT_TOKEN` environment variable required
+- Entry point: `monitor_bot.py` (don't move)
+- Tests: `pytest -v` (unit) or `pytest tests/unit -v` (fast)
+- Slack space to keep files <200 lines — if scrolling too much, split it
+
+## Resources
+
+- **Adding features?** Use `/telegram-bot-feature-development` skill or `/implement-bot-feature` prompt
+- **Development tips?** See `.github/copilot-instructions.md`
